@@ -1,49 +1,69 @@
-# Step 1: Node Maintains a Neighbor Table
-# node.py
 import socket
 import threading
 import random
-from config import HOST, BASE_PORT, BUFFER_SIZE, NEIGHBORS, FORWARD_PROBABILITY, TTL
+import sys
+from config import HOST, BUFFER_SIZE, FORWARD_PROBABILITY, TTL
+
+PORT = int(sys.argv[1])
+NEIGHBORS = list(map(int, sys.argv[2:]))
 
 neighbor_table = set(NEIGHBORS)
+seen_messages = set()
 
 def handle_incoming(conn, addr):
     data = conn.recv(BUFFER_SIZE).decode()
-    msg, ttl = data.split('|')
-    ttl = int(ttl)
-    print(f"[NODE {BASE_PORT}] Received from {addr}: {msg} (TTL={ttl})")
     conn.close()
-    
-    # Forward probabilistically
-    if ttl > 0 and random.random() < FORWARD_PROBABILITY:
-        forward_message(msg, ttl - 1, exclude=addr[1])
 
-def start_server(port):
+    try:
+        msg_id, msg, ttl = data.split('|')
+        ttl = int(ttl)
+    except:
+        return
+
+    if msg_id in seen_messages:
+        return
+
+    seen_messages.add(msg_id)
+
+    print(f"[NODE {PORT}] From {addr}: {msg} (TTL={ttl})")
+
+    if ttl > 0 and random.random() < FORWARD_PROBABILITY:
+        forward_message(msg_id, msg, ttl - 1)
+
+def start_server():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind((HOST, port))
+    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+    try:
+        server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+    except:
+        pass
+
+    server.bind((HOST, PORT))
     server.listen()
-    print(f"[NODE {port}] Listening for neighbors...")
+
+    print(f"[NODE {PORT}] Listening...")
+
     while True:
         conn, addr = server.accept()
-        threading.Thread(target=handle_incoming, args=(conn, addr)).start()
-#________________________________________
-# Step 2: Node Forwards Messages with TTL
-def forward_message(message, ttl, exclude=None):
+        threading.Thread(target=handle_incoming, args=(conn, addr), daemon=True).start()
+
+def forward_message(msg_id, message, ttl):
     for peer_port in neighbor_table:
-        if peer_port == exclude:
-            continue
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect((HOST, peer_port))
-            s.sendall(f"{message}|{ttl}".encode())
+            s.sendall(f"{msg_id}|{message}|{ttl}".encode())
             s.close()
-        except ConnectionRefusedError:
-            print(f"[NODE {BASE_PORT}] Peer {peer_port} unreachable")
-#________________________________________
-#Step 3: Node Sends Initial Message
+        except:
+            pass
+
 if __name__ == "__main__":
-    threading.Thread(target=start_server, args=(BASE_PORT,), daemon=True).start()
-    
-    # Send a test message to neighbors
-    test_message = f"Hello from node {BASE_PORT}"
-    forward_message(test_message, TTL)
+    threading.Thread(target=start_server, daemon=True).start()
+
+    msg_id = str(random.randint(100000, 999999))
+    message = f"Hello from node {PORT}"
+    forward_message(msg_id, message, TTL)
+
+    while True:
+        pass

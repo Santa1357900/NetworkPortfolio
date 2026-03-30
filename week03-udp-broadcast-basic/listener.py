@@ -1,9 +1,15 @@
-# Step 2: Create Broadcast Listener
-# listener.py
 import socket
 from config import PORT, BUFFER_SIZE
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+try:
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+except AttributeError:
+    pass
+
 sock.bind(("", PORT))  # Listen on all interfaces
 
 print(f"[LISTENER] Listening for broadcast on port {PORT}")
