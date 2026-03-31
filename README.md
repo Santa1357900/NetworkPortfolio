@@ -42,7 +42,7 @@ Email: thanakon.th@kkumail.com
 
 ## Certificate
 <img width="1007" height="676" alt="image" src="https://github.com/user-attachments/assets/050e531f-bf3b-474c-84c5-fa0076bd3314" />
-
+<img width="864" height="589" alt="image" src="https://github.com/user-attachments/assets/2948e2a0-7b68-49a1-851b-f3295ff59eca" />
 
 ## Checkpoint Exam
 <img width="1849" height="399" alt="image" src="https://github.com/user-attachments/assets/31f5ae70-db13-47d9-ac74-ab2a9222529f" />
